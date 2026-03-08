@@ -1,0 +1,36 @@
+name: Build Qt5 on Windows
+
+on:
+  push:
+    branches: [ release_6_06 ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Install Qt5 via Qt installer or Chocolatey
+      - name: Install Qt5
+        run: |
+          choco install qt5 --version=5.15.2 -y
+          refreshenv
+
+      # Add Qt bin to PATH
+      - name: Set Qt Path
+        run: |
+          setx PATH "%PATH%;C:\tools\Qt\5.15.2\mingw81_64\bin"
+
+      # Build project
+      - name: Build
+        run: |
+          cd $Env:GITHUB_WORKSPACE
+          qmake vesc_tool.pro
+          mingw32-make -j %NUMBER_OF_PROCESSORS%
+
+      # Deploy with windeployqt
+      - name: Deploy
+        run: |
+          windeployqt ./vesc_tool.exe
+          mkdir release
+          copy ./vesc_tool.exe ./release/
